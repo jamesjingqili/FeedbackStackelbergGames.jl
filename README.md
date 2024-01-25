@@ -1,3 +1,3 @@
-# Primal-Dual Interior-Point (PI) Method for Constrained Nonlinear Dynamic Games
+# An Efficient Julia Solver for Feedback Stackelberg Games
 
-This project is still in stealth mode. The codes will be pushed soon.
+The codes will be pushed soon.
