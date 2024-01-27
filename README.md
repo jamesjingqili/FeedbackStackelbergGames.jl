@@ -14,7 +14,7 @@ Moreover, the algorithm could tolerate infeasible initializations to some extent
 Dependency: Julia 1.9.0 - 1.9.2
 
 Recommended actions:
-1. make sure julia version is Julia 1.9.0 - 1.9.2
+1. make sure julia version is 1.9.0 - 1.9.2
 2. git clone <this_repo>
 3. cd to FeedbackStackelbergGames.jl
 4. install the dependency package by running in the terminal:
