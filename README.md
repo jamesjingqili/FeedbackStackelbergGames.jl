@@ -1,4 +1,4 @@
-# An Efficient Julia Solver for Feedback Stackelberg Games
+# Primal-Dual Interior Point Method For Constrained Nonlinear Feedback Stackelberg Games
 
 Dependency: Julia 1.9.0 - 1.9.2
 
