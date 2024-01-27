@@ -9,16 +9,13 @@ using Plots
 using LaTeXStrings
 # this file is certified to be correct.
 
-# x0 = [
-#     0.9; # x1
-#     1.2; # y1
-#     3.2; # v1 1.2
-#     0.0; # θ1
-#     0.5; # x2
-#     0.4; # y2
-#     3.8; # v2 1.6
-#     0.0; # θ2
-# ];
+using FilePathsBase
+
+ρ₀ = 1; # initial penalty parameter
+num_iter = 10; # number of iterations for each outer iteration
+num_outer_iter = 1; # number of outer iterations
+
+# initial state:
 x0 = [
     0.9; # x1
     1.2; # y1
@@ -61,13 +58,6 @@ lower_circle_x = x_right_corner - radius;
 lower_circle_y = y_right_corner;
 
 function road_constraints(x,y,road_length)
-    # if y > road_length
-    #     return (base_x - x)
-    # elseif y > y_right_corner
-    #     return (base_x + (x_right_corner - base_x)/(road_length - y_right_corner)*(road_length - y) - x)
-    # else
-    #     return (x_right_corner - x)
-    # end
     if y > road_length
         return base_x - x
     elseif y > y_right_corner 
@@ -82,35 +72,12 @@ function road_constraints(x,y,road_length)
     else
         return x_right_corner - x
     end
-    # if y < road_length # commented out 11/6/2023
-    #     return road_length - y - (road_length - y_right_corner)/(x_right_corner - base_x)*(x - base_x)
-    # else
-    #     return base_x - x
-    # end
 end
 
 
-# function road_constraints(x,y,road_length)
-#     if x > base_x + ineq_constraint_eps
-#         # return ineq_constraint_eps
-#         return road_length - y - (road_length - y)/(1.5 - base_x)*(x - base_x)
-#     else
-#         if y > road_length
-#             return base_x - x
-#         else
-#             return ineq_constraint_eps
-#         end
-#     end
-# end
 
-# equality constraint: x1 change lane successfully, can be dropped if hard to solve
-# inequality constraint: x1 and x2 avoid collision 
-# inequality constraint: x1 stays in lane
-# inequality constraint: x2 stays in lane
-# we can define lane to be a function of x1 and x2. For example, 
-# x1,x2 > 0.0, 
-# (y1-2*x1)<-2 if y1<4 else x1<1.0
-# (y2-2*x2)<-2 if y2<4 else x2<1.0
+
+
 
 inequality_constraints_size = 7 + 8 - 2;
 equality_constraints_size = 2 ;
@@ -162,18 +129,7 @@ f_list = [(x,u)->
     ]
     for t in 1:horizon
 ];
-# previous version costs:
-# costs_list = [
-#     [
-#         (x, u) -> (10*(x[1]-0.4)^2 + 4*(x[3]-x[7])^2  + 2*u[1]^2+2*u[2]^2 ) # + 2*x[4]^2, 4 times control cost
-#         (x, u) -> ( 0*(x[5]-0.5)^2 + 4*(x[3]-x[7])^2 + 0.5*x[8]^4 + 2*u[3]^2+2*u[4]^2 ) # 2*(x[5]-0.5)^2 +, 4 times control cost
-#     ] 
-#     for t in 1:horizon
-# ];
-# terminal_costs_list = [
-#     (x) -> (10*(x[1]-0.4)^2 + 4*(x[3]-x[7])^2 ) # + 2*x[4]^2
-#     (x) -> ( 0*(x[5]-0.5)^2 + 4*(x[3]-x[7])^2 + 0.5*x[8]^4)
-# ];
+
 costs_list = [
     [
         (x, u) -> (10*(x[1]-0.4)^2 + 6*(x[3]-x[7])^2  + 2*u[1]^2+2*u[2]^2 ) # + 2*x[4]^2, 4 times control cost
@@ -276,9 +232,7 @@ nonlinear_g = game(
 # define the current_op
 # ρ₀ =  1/2^12 # 1/1.0;
 # num_iter = 20;
-ρ₀ = 1;
-num_iter = 10;
-num_outer_iter = 1;
+
 
 # TODO: we should think about initializing γ by considering γ .* inequality_constraints_list = ρ
 initial_op = trajectory(
@@ -359,17 +313,6 @@ lq_approximation!(lq_approx, nonlinear_g, current_op);
 @time for outer_iter = 1:num_outer_iter
     # global x, u, s, γ, μ, λ, η, ψ, Mₜ, Nₜ, nₜ, Δ, α, ρ, new_loss, next_op, current_op, lq_approx, early_stop_counter, calibrated_γ, calibrated_s
     global Mₜ, Nₜ, nₜ, Δ, α, ρ, new_loss, next_op, current_op, lq_approx, early_stop_counter, calibrated_γ, calibrated_s, scale_s
-    # if outer_iter == 1
-    #     ρ_list[outer_iter] = ρ;
-    # else
-    #     ρ_list[outer_iter] = ρ_list[outer_iter-1]*1/σ;
-    # end
-    # tmp_s = current_op.s
-    # for t = 1:horizon+1
-    #     # tmp_s[t] = max.(tmp_s[t], 10.0*ones(2*inequality_constraints_size))
-    #     calibrated_γ[t] = diagm(current_op.s[t])^(-1)*(ρ_list[outer_iter].*ones(2*inequality_constraints_size));
-    #     calibrated_γ[t] = min.(calibrated_γ[t], maximum_allowed_γ);
-    # end
     current_op = trajectory(
         x = current_op.x,
         u = current_op.u,
@@ -412,10 +355,6 @@ lq_approximation!(lq_approx, nonlinear_g, current_op);
             s = Δs
         );
         
-        # Δ_list[outer_iter] = [Δ_list[outer_iter]; Δ];
-        # M_list[outer_iter] = [M_list[outer_iter]; [Mₜ]];
-        # N_list[outer_iter] = [N_list[outer_iter]; [Nₜ]];
-        # n_list[outer_iter] = [n_list[outer_iter]; [nₜ]];
         current_op_list[outer_iter] = [current_op_list[outer_iter]; current_op];
 
         α, new_loss, next_op, lq_approx, min_s, min_γ, new_homotopy_loss, α_γ, min_ineq = nw_pdip_line_search(
@@ -455,26 +394,9 @@ lq_approximation!(lq_approx, nonlinear_g, current_op);
         if new_loss < 1e-6
             break
         end
-        # if α == 0.0 || loss_list[outer_iter][iter] < inner_convergence_tol
-        #     break
-        # #     current_op = trajectory(
-        # #         x = next_op.x + [0.01*randn(nx) for t in 1:horizon+1],
-        # #         u = next_op.u + [0.01*randn(nu) for t in 1:horizon],
-        # #         λ = next_op.λ + [0.01*randn(nx*n_players) for t in 1:horizon],
-        # #         η = next_op.η + [0.01*randn(nu) for t in 1:horizon-1],
-        # #         ψ = next_op.ψ + [0.01*randn(m) for t in 1:horizon],
-        # #         μ = next_op.μ + [0.01*randn(equality_constraints_size*n_players) for t in 1:horizon+1],
-        # #         γ = next_op.γ + [0.01*randn(inequality_constraints_size*n_players) for t in 1:horizon+1],
-        # #         s = next_op.s + [0.01*randn(inequality_constraints_size*n_players) for t in 1:horizon+1]
-        # #     );
-        # end
-
-        # if loss_list[outer_iter][iter] < 1e-8
-        #     break
-        # end
     end
 end
-loss_list
+
 # # save loss_list to a file named by the "highway_data"+current timestamp
 # file_name = "highway_data" * string(Dates.now()) * ".jld2"
 # save(file_name, "loss_list", loss_list, "x0", x0)
@@ -482,12 +404,273 @@ loss_list
 
 
 
+now_str = Dates.format(now(), "yyyy-mm-dd-HH:MM:SS")
+marker_size_list = 6*[0.98^(horizon+1-t) for t in 1:horizon+1]
+alpha_list = [0.95^(horizon+1-t) for t in 1:horizon];
+x_st = current_op.x;
+
+folder_name = now_str
+# for storing data:
+data = Dict(
+    "loss_list" => loss_list,
+    "homotopy_loss" => homotopy_loss,
+    "α_list" => α_list,
+    "α_γ_list" => α_γ_list,
+    "min_s_list" => min_s_list,
+    "min_γ_list" => min_γ_list,
+    "min_ineq_list" => min_ineq_list,
+    "x0" => x0,
+    "road_length" => road_length,
+    "base_x" => base_x,
+    "ineq_constraint_eps" => ineq_constraint_eps,
+    "ρ_list" => ρ_list
+)
+# save the data to a JLD2 file
+save(folder_name * "/" *"simple_data_highway.jld2", "data", data)
 
 
 
 
 
 
+plot_size = (200, 400)
+
+player1_color = :red
+player2_color = :blue
+player1_shape = :square
+player2_shape = :square
+
+upper_angle_list = LinRange(0, 2*segment_angle, 20)
+lower_angle_list = LinRange(2*segment_angle, 0, 20)
+
+upper_curve_x = base_x .+ radius .* (1 .- cos.(upper_angle_list))
+upper_curve_y = road_length .- radius .* sin.(upper_angle_list)
+lower_curve_x = x_right_corner .- radius .* (1 .- cos.(lower_angle_list))
+lower_curve_y = y_right_corner .+ radius .* sin.(lower_angle_list)
+
+x_inclined_lines = [upper_curve_x; lower_curve_x]
+y_inclined_lines = [upper_curve_y; lower_curve_y]
+
+x_upper_right_lines = [base_x, base_x]
+y_upper_right_lines = [road_length, 5.0]
+x_lower_right_lines = [x_right_corner, x_right_corner]
+y_lower_right_lines = [y_right_corner, 0.0]
+x_left_lines = [0.25, 0.25]
+y_left_lines = [0.0, 5.0]
+scatter([x_st[t][1] for t in 1:horizon], [x_st[t][2] for t in 1:horizon],markershape=player1_shape, markercolor=player1_color, label="", alpha=alpha_list)
+scatter!([x_st[t][5] for t in 1:horizon], [x_st[t][6] for t in 1:horizon],markershape=player2_shape, markercolor=player2_color,label="", alpha=alpha_list)
+scatter!([x_st[end][1]], [x_st[end][2]],markershape=player1_shape, label="player 1", markercolor=player1_color)
+scatter!([x_st[end][5]], [x_st[end][6]],markershape=player2_shape, label="player 2", markercolor=player2_color)
+plot!(x_upper_right_lines, y_upper_right_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_lower_right_lines, y_lower_right_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_left_lines, y_left_lines, label = "road edge", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_inclined_lines, y_inclined_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+xlims!(0.0, 1.5)
+ylims!(0.0, 5.0)
+plot!(size = plot_size,left_margin=5Plots.mm, bottom_margin=5Plots.mm,grid=false)
+xlabel!(L"p_x")
+ylabel!(L" ")
+savefig(folder_name * "/" *"highway_st.pdf")
+
+
+# plot initial trajectory:
+x_st_init = current_op_list[1][1].x;
+scatter([x_st_init[t][1] for t in 1:horizon], [x_st_init[t][2] for t in 1:horizon],markershape=player1_shape, color=player1_color,label="", alpha=alpha_list)
+scatter!([x_st_init[t][5] for t in 1:horizon], [x_st_init[t][6] for t in 1:horizon],markershape=player2_shape,color=player2_color,label="", alpha=alpha_list)
+scatter!([x_st_init[end][1]], [x_st_init[end][2]],markershape=player1_shape, label="", color = player1_color)
+scatter!([x_st_init[end][5]], [x_st_init[end][6]],markershape=player2_shape, label="", color = player2_color)
+plot!(x_upper_right_lines, y_upper_right_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_lower_right_lines, y_lower_right_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_left_lines, y_left_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_inclined_lines, y_inclined_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+xlims!(0.0, 1.5)
+ylims!(0.0, 5.0)
+plot!(size = plot_size,left_margin=5Plots.mm, bottom_margin=5Plots.mm,grid=false)
+xlabel!(L"p_x")
+ylabel!(L"p_y")
+savefig(folder_name * "/" *"highway_st_init.pdf")
+
+# plot second trajectory:
+x_st_second = current_op_list[1][2].x;
+scatter([x_st_second[t][1] for t in 1:horizon], [x_st_second[t][2] for t in 1:horizon],markershape=player1_shape, color=player1_color,label="", alpha=alpha_list)
+scatter!([x_st_second[t][5] for t in 1:horizon], [x_st_second[t][6] for t in 1:horizon],markershape=player2_shape,color=player2_color,label="", alpha=alpha_list)
+scatter!([x_st_second[end][1]], [x_st_second[end][2]],markershape=player1_shape, label="", color = player1_color)
+scatter!([x_st_second[end][5]], [x_st_second[end][6]],markershape=player2_shape, label="", color = player2_color)
+plot!(x_upper_right_lines, y_upper_right_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_lower_right_lines, y_lower_right_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_left_lines, y_left_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_inclined_lines, y_inclined_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+xlims!(0.0, 1.5)
+ylims!(0.0, 5.0)
+plot!(size = plot_size,left_margin=5Plots.mm, bottom_margin=5Plots.mm,grid=false)
+xlabel!(L"p_x")
+ylabel!(L" ")
+savefig(folder_name * "/" *"highway_st_second.pdf")
+
+
+# plot third trajectory:
+x_st_third = current_op_list[1][3].x;
+scatter([x_st_third[t][1] for t in 1:horizon], [x_st_third[t][2] for t in 1:horizon],markershape=player1_shape, color=player1_color,label="", alpha=alpha_list)
+scatter!([x_st_third[t][5] for t in 1:horizon], [x_st_third[t][6] for t in 1:horizon],markershape=player2_shape,color=player2_color,label="", alpha=alpha_list)
+scatter!([x_st_third[end][1]], [x_st_third[end][2]],markershape=player1_shape, label="", color = player1_color)
+scatter!([x_st_third[end][5]], [x_st_third[end][6]],markershape=player2_shape, label="", color = player2_color)
+plot!(x_upper_right_lines, y_upper_right_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_lower_right_lines, y_lower_right_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_left_lines, y_left_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_inclined_lines, y_inclined_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+xlims!(0.0, 1.5)
+ylims!(0.0, 5.0)
+plot!(size = plot_size,left_margin=5Plots.mm, bottom_margin=5Plots.mm,grid=false)
+xlabel!(L"p_x")
+ylabel!(L" ")
+savefig(folder_name * "/" *"highway_st_third.pdf")
+
+# plot the fourth trajectory:
+x_st_fourth = current_op_list[1][4].x;
+scatter([x_st_fourth[t][1] for t in 1:horizon], [x_st_fourth[t][2] for t in 1:horizon],markershape=player1_shape, color=player1_color,label="", alpha=alpha_list)
+scatter!([x_st_fourth[t][5] for t in 1:horizon], [x_st_fourth[t][6] for t in 1:horizon],markershape=player2_shape,color=player2_color,label="", alpha=alpha_list)
+scatter!([x_st_fourth[end][1]], [x_st_fourth[end][2]],markershape=player1_shape, label="", color = player1_color)
+scatter!([x_st_fourth[end][5]], [x_st_fourth[end][6]],markershape=player2_shape, label="", color = player2_color)
+plot!(x_upper_right_lines, y_upper_right_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_lower_right_lines, y_lower_right_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_left_lines, y_left_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_inclined_lines, y_inclined_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+xlims!(0.0, 1.5)
+ylims!(0.0, 5.0)
+plot!(size = plot_size,left_margin=5Plots.mm, bottom_margin=5Plots.mm,grid=false)
+xlabel!(L"p_x")
+ylabel!(L" ")
+savefig(folder_name * "/" *"highway_st_fourth.pdf")
+
+
+
+# plot the fifth trajectory:
+x_st_fifth = current_op_list[1][5].x;
+scatter([x_st_fifth[t][1] for t in 1:horizon], [x_st_fifth[t][2] for t in 1:horizon],markershape=player1_shape, color=player1_color,label="", alpha=alpha_list)
+scatter!([x_st_fifth[t][5] for t in 1:horizon], [x_st_fifth[t][6] for t in 1:horizon],markershape=player2_shape,color=player2_color,label="", alpha=alpha_list)
+scatter!([x_st_fifth[end][1]], [x_st_fifth[end][2]],markershape=player1_shape, label="", color = player1_color)
+scatter!([x_st_fifth[end][5]], [x_st_fifth[end][6]],markershape=player2_shape, label="", color = player2_color)
+plot!(x_upper_right_lines, y_upper_right_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_lower_right_lines, y_lower_right_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_left_lines, y_left_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_inclined_lines, y_inclined_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+xlims!(0.0, 1.5)
+ylims!(0.0, 5.0)
+plot!(size = plot_size,left_margin=5Plots.mm, bottom_margin=5Plots.mm,grid=false)
+xlabel!(L"p_x")
+ylabel!(L" ")
+savefig(folder_name * "/" *"highway_st_fifth.pdf")
+
+
+
+# plot the sixth trajectory:
+x_st_sixth = current_op_list[1][6].x;
+scatter([x_st_sixth[t][1] for t in 1:horizon], [x_st_sixth[t][2] for t in 1:horizon],markershape=player1_shape, color=player1_color,label="", alpha=alpha_list)
+scatter!([x_st_sixth[t][5] for t in 1:horizon], [x_st_sixth[t][6] for t in 1:horizon],markershape=player2_shape,color=player2_color,label="", alpha=alpha_list)
+scatter!([x_st_sixth[end][1]], [x_st_sixth[end][2]],markershape=player1_shape, label="", color = player1_color)
+scatter!([x_st_sixth[end][5]], [x_st_sixth[end][6]],markershape=player2_shape, label="", color = player2_color)
+plot!(x_upper_right_lines, y_upper_right_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_lower_right_lines, y_lower_right_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_left_lines, y_left_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+plot!(x_inclined_lines, y_inclined_lines, label = "", color = :black, linewidth = 2, linestyle = :solid)
+xlims!(0.0, 1.5)
+ylims!(0.0, 5.0)
+plot!(size = plot_size,left_margin=5Plots.mm, bottom_margin=5Plots.mm,grid=false)
+xlabel!(L"p_x")
+ylabel!(L" ")
+savefig(folder_name * "/" *"highway_st_sixth.pdf")
+
+
+
+
+
+
+# in what follows, we plot loss values.
+# create a 2 by 2 subplot
+grid_option = true
+# plot loss vs. iterations for the first iteration
+plot(1:length(loss_list[1]), log10.(loss_list[1]), 
+    label = "", color = :black, linewidth = 2, 
+    left_margin=10Plots.mm,
+    bottom_margin=5Plots.mm,
+    size = (300, 200),
+    linestyle = :solid,
+    grid=grid_option
+)
+xlabel!("iterations "*L"k")
+ylabel!(L"\lg(\|\|K_\rho(\mathbf{z}^{(k)})\|\|_2)")
+savefig(folder_name * "/" *"highway_st_loss_first.pdf")
+
+
+# # plot loss vs. iterations for the second iteration
+# plot(1:length(loss_list[2]), log10.(loss_list[2]), 
+#     label = "", color = :black, linewidth = 2, 
+#     left_margin=10Plots.mm,
+#     bottom_margin=5Plots.mm,
+#     size = (300, 200),
+#     linestyle = :solid,
+#     grid=grid_option
+# )
+# xlabel!("iterations "*L"k")
+# # ylabel!(L"\lg(K(\mathbf{z}^{(k)}))")
+# savefig(folder_name * "/" *"highway_st_loss_second.pdf")
+
+
+
+# # plot loss vs. iterations for the third iteration
+# plot(1:length(loss_list[3]), log10.(loss_list[3]), 
+#     label = "", color = :black, linewidth = 2, 
+#     left_margin=10Plots.mm,
+#     bottom_margin=5Plots.mm,
+#     size = (300, 200),
+#     linestyle = :solid,
+#     grid=grid_option
+# )
+# xlabel!("iterations "*L"k")
+# # ylabel!(L"\lg(K(\mathbf{z}^{(k)}))")
+# savefig(folder_name * "/" *"highway_st_loss_third.pdf")
+
+
+# # plot loss vs. iterations for the fifth iteration
+# plot(1:length(loss_list[5]), log10.(loss_list[5]), 
+#     label = "", color = :black, linewidth = 2, 
+#     left_margin=10Plots.mm,
+#     bottom_margin=5Plots.mm,
+#     size = (300, 200),
+#     linestyle = :solid,
+#     grid=grid_option
+# )
+# xlabel!("iterations "*L"k")
+# # ylabel!(L"\lg(K(\mathbf{z}^{(k)}))")
+# savefig(folder_name * "/" *"highway_st_loss_fifth.pdf")
+
+# # plot loss vs. iterations for the sixth iteration
+# plot(1:length(loss_list[6]), log10.(loss_list[6]), 
+#     label = "loss", color = :black, linewidth = 2, 
+#     left_margin=10Plots.mm,
+#     bottom_margin=5Plots.mm,
+#     size = (300, 200),
+#     linestyle = :solid,
+#     grid=grid_option
+# )
+# xlabel!("iterations "*L"k")
+# # ylabel!(L"\lg(K(\mathbf{z}^{(k)}))")
+# savefig(folder_name * "/" *"highway_st_loss_sixth.pdf")
+
+
+
+# # plot loss vs. iterations for the tenth iteration
+# plot(1:length(loss_list[10]), log10.(loss_list[10]), 
+#     label = "merit function value", color = :black, linewidth = 2, 
+#     left_margin=10Plots.mm,
+#     bottom_margin=5Plots.mm,
+#     size = (300, 200),
+#     linestyle = :solid,
+#     grid=grid_option
+# )
+# xlabel!("iterations "*L"k")
+# # ylabel!(L"\lg(K(\mathbf{z}^{(k)}))")
+# savefig(folder_name * "/" *"highway_st_loss_tenth.pdf")
 
 
 
