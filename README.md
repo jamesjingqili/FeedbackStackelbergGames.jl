@@ -1,6 +1,16 @@
 # Primal-Dual Interior Point Method For Constrained Nonlinear Feedback Stackelberg Games
 
 
+Key features:
+We are able to handle
+1. nonlinear discrete-time dynamics
+2. general cost functions of each player, which may be nonconvex but may require smoothness
+3. coupled nonlinear equality and inequality constraints, which could be nonconvex
+Moreover, the algorithm could tolerate infeasible initializations to some extent
+
+
+
+
 Dependency: Julia 1.9.0 - 1.9.2
 
 Recommended actions:
