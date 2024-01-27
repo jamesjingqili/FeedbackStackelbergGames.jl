@@ -5,7 +5,7 @@ function pdip_KKT_residual_fbst(
     current_op::trajectory,
     ρ::Float64
     )
-    norm_mode = Inf
+    norm_mode = 2
     # step 1: construct the KKT matrix
     Mₜ, Nₜ, nₜ = pdip_fbst_lq_solver!(π, g, current_op, ρ, true)
     x = current_op.x # in global coordinate?

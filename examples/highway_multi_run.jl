@@ -452,51 +452,5 @@ end
 
 end
 
-# check if there dones have an 0.0 in the i-th row of list_loss_list
-list_converged_x0 = [];
-list_of_converged_index = [];
-for ii in 1:num_samples
-    if 0.0 ∉ list_loss_list[ii, :, :]
-        push!(list_converged_x0, x0_list[:,ii])
-        push!(list_of_converged_index, ii)
-    end
-end
-
-list_of_converged_index = list_of_converged_index[1:10];
-converged_loss_list = list_loss_list[list_of_converged_index,:,:];
-converged_x0_list = x0_list[:,list_of_converged_index];
-
-time_list_converged = list_time_list[list_of_converged_index,:,:];
-
-
-number_of_converged = length(list_of_converged_index);
-num_iter = size(converged_loss_list)[2];
-# compute the mean and the variance of computation time for those converged case
-# for each rho, across different initializations:
-mean_time_list = zeros(number_of_converged, num_iter);
-var_time_list = zeros(number_of_converged, num_iter);
-total_time_list = zeros(number_of_converged, num_iter);
-for outer_iter in 1:length(list_of_converged_index)
-    for iter in 1:length(list_time_list[outer_iter, :, 1])
-        total_time_list[outer_iter, iter] = sum(list_time_list[outer_iter, iter,:]);
-        mean_time_list[outer_iter, iter] = mean(list_time_list[outer_iter, iter,:]);
-        var_time_list[outer_iter, iter] = var(list_time_list[outer_iter, iter,:]);
-    end
-end
-
-
-# compute the mean of the time of across different initializations and rho and iterations:
-mean_time_list_across_rho = zeros(num_iter);
-var_time_list_across_rho = zeros(num_iter);
-total_time_list_across_rho = zeros(num_iter);
-for iter in 1:num_iter
-    total_time_list_across_rho[iter] = sum(total_time_list[:, iter]);
-    mean_time_list_across_rho[iter] = mean(total_time_list[:, iter]);
-    var_time_list_across_rho[iter] = var(total_time_list[:, iter]);
-end
-
-
-
-
 
 
