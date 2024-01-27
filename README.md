@@ -6,7 +6,8 @@ For highway experiments:
 1. cd to the folder /example
 2. run the following codes in terminal: 
     "julia --project highway.jl"
-3. data file and plots will be stored in a folder named after the date and time
+3. wait, it may take a while to precompile the program, but after the precompilation, it will execute the algorithm super fast, returning a solution within 10 seconds.
+4. data file and plots will be stored in a folder named after the date and time
 
 
 Note that parameters of the PDIP algorithm, dynamics, costs, and constraints could be customized in the file /example/highway.jl
