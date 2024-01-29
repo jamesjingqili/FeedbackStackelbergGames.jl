@@ -6,7 +6,7 @@ We are able to handle
 1. nonlinear discrete-time dynamics
 2. general cost functions of each player, which may be nonconvex but may require smoothness
 3. coupled nonlinear equality and inequality constraints, which could be nonconvex
-Moreover, the algorithm could tolerate infeasible initializations to some extent
+4. infeasible initializations, to some extent
 
 
 
