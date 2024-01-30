@@ -1,6 +1,8 @@
 # Primal-Dual Interior Point Method For Constrained Nonlinear Feedback Stackelberg Games
 
 A Julia implementation of this work: https://arxiv.org/pdf/2401.15745.pdf.
+All the source codes for the experiments in the above paper are included in this repo. 
+
 
 ## Key features:
 We are able to handle
