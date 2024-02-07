@@ -409,7 +409,7 @@ marker_size_list = 6*[0.98^(horizon+1-t) for t in 1:horizon+1]
 alpha_list = [0.95^(horizon+1-t) for t in 1:horizon];
 x_st = current_op.x;
 
-folder_name = now_str
+folder_name = "log"
 # for storing data:
 data = Dict(
     "loss_list" => loss_list,
