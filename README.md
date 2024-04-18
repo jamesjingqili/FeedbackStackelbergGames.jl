@@ -24,7 +24,8 @@ We are able to handle
    1) "julia --project"
    2) once the Julia REPL is openned, enter the package management mode by typing "]"
    3) type "instantiate", and then press "enter".
-   4) wait for julia to finish installing the necessary packages 
+   4) wait for julia to finish installing the necessary packages
+   5) manually install LatexStrings julia package by "add LatexStrings"
 
 
 ## For highway experiments:
