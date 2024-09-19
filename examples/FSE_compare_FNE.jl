@@ -197,8 +197,8 @@ J2_st[end] = 1/2*x_st[end]'*Q2*x_st[end]
 # we then consider the fbne case:
 
 π_ne = strategy([zeros(nu,nx) for t in 1:horizon], [zeros(nu) for t in 1:horizon])
-# fbne_lq_solver!(π_ne, g)
-S_list = fbne_lq_solver_output_S!(π_ne, g)
+fbne_lq_solver!(π_ne, g)
+# S_list = fbne_lq_solver_output_S!(π_ne, g)
 
 x_ne = [zeros(nx) for t in 1:horizon+1]
 u_ne = [zeros(nu) for t in 1:horizon]
@@ -226,11 +226,23 @@ J2_ne[end] = 1/2*x_ne[end]'*Q2*x_ne[end]
 
 # ---------------------- below is for plotting ----------------------
 x_ne
-
+x_ne_csv = zeros(horizon+1, 8)
+for t = 1:horizon+1
+    x_ne_csv[t,:] = x_ne[t]
+end
 # TODO: design LQ intersection experiment
 # TODO: compute the two costs!
 
 x_st
+x_st_csv = zeros(horizon+1, 8)
+for t = 1:horizon+1
+    x_st_csv[t,:] = x_st[t]
+end
+
+using CSV, Tables
+CSV.write("LQ_game_fbst.csv", Tables.table(x_st_csv))
+CSV.write("LQ_game_fbne.csv", Tables.table(x_ne_csv))
+
 
 
 using Plots

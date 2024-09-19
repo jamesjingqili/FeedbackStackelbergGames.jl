@@ -17,14 +17,14 @@ num_outer_iter = 1; # number of outer iterations
 
 # initial state:
 x0 = [
-    0.9; # x1
-    1.2; # y1
-    3.5; # v1 1.2
-    0.0; # θ1
     0.5; # x2
     0.6; # y2 # 0.4 works well
     3.8; # v2 1.6
     0.0; # θ2
+    0.9; # x1
+    1.2; # y1
+    3.5; # v1 1.2
+    0.0; # θ1
 ];
 horizon = 20; # 50
 n_players = 2;
@@ -132,15 +132,15 @@ f_list = [(x,u)->
 
 costs_list = [
     [
-        (x, u) -> (10*(x[1]-0.4)^2 + 6*(x[3]-x[7])^2  + 2*u[1]^2+2*u[2]^2 ) # + 2*x[4]^2, 4 times control cost
-        (x, u) -> ( 0*(x[5]-0.5)^2 + 0*(x[3]-x[7])^2 + 1*x[8]^4 + 2*u[3]^2+2*u[4]^2 ) # 2*(x[5]-0.5)^2 +, 4 times control cost
+        (x, u) -> ( 0*(x[1]-0.5)^2 + 0*(x[3]-x[7])^2 + 1*x[4]^4 + 2*u[1]^2+2*u[2]^2 ) # 2*(x[5]-0.5)^2 +, 4 times control cost
+        (x, u) -> (10*(x[5]-0.4)^2 + 6*(x[3]-x[7])^2  + 2*u[3]^2+2*u[4]^2 ) # + 2*x[4]^2, 4 times control cost
     ] 
     for t in 1:horizon
 ];
 terminal_costs_list = [
-    (x) -> (10*(x[1]-0.4)^2 + 6*(x[3]-x[7])^2 ) # + 2*x[4]^2
-    (x) -> ( 0*(x[5]-0.5)^2 + 0*(x[3]-x[7])^2 + 1*x[8]^4)
-];
+    (x) -> ( 0*(x[1]-0.5)^2 + 0*(x[3]-x[7])^2 + 1*x[4]^4)
+    (x) -> (10*(x[5]-0.4)^2 + 6*(x[3]-x[7])^2 ) # + 2*x[4]^2
+    ];
 equality_constraints_list = [
     [
         (z) -> [0.0;   0.0;]#; 0.0; 0.0] 0.0;
@@ -397,9 +397,12 @@ lq_approximation!(lq_approx, nonlinear_g, current_op);
     end
 end
 
+# # save loss_list to a file named by the "highway_data"+current timestamp
+# file_name = "highway_data" * string(Dates.now()) * ".jld2"
+# save(file_name, "loss_list", loss_list, "x0", x0)
 
 
-
+# store the current_op.x to a .csv file
 current_op_x_csv = zeros(horizon+1, nx);
 for t in 1:horizon+1
     current_op_x_csv[t,:] = current_op.x[t];
@@ -410,15 +413,12 @@ for t in 1:horizon
     current_op_u_csv[t,:] = current_op.u[t];
 end
 
-
-CSV.write("FBST_lane_changing_1_x.csv", Tables.table(current_op_x_csv), writeheader=false)
-CSV.write("FBST_lane_changing_1_u.csv", Tables.table(current_op_u_csv), writeheader=false)
-
+CSV.write("FBST_lane_changing_2_x.csv", Tables.table(current_op_x_csv), writeheader=false)
+CSV.write("FBST_lane_changing_2_u.csv", Tables.table(current_op_u_csv), writeheader=false)
 
 
-# # save loss_list to a file named by the "highway_data"+current timestamp
-# file_name = "highway_data" * string(Dates.now()) * ".jld2"
-# save(file_name, "loss_list", loss_list, "x0", x0)
+
+
 
 
 
@@ -454,8 +454,8 @@ save(folder_name * "/" *"simple_data_highway.jld2", "data", data)
 
 plot_size = (200, 400)
 
-player1_color = :red
-player2_color = :blue
+player1_color = :blue
+player2_color = :red
 player1_shape = :square
 player2_shape = :square
 
@@ -489,7 +489,7 @@ ylims!(0.0, 5.0)
 plot!(size = plot_size,left_margin=5Plots.mm, bottom_margin=5Plots.mm,grid=false)
 xlabel!(L"p_x")
 ylabel!(L" ")
-savefig(folder_name * "/" *"highway_st.pdf")
+savefig(folder_name * "/" *"highway_st_flip_order.pdf")
 
 
 # plot initial trajectory:
